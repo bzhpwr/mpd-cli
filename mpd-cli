@@ -1,0 +1,228 @@
+#!/usr/bin/env python2
+# coding: utf8
+
+from mpd import MPDClient
+import argparse
+import json
+
+def connect(host, port):
+    client = MPDClient()
+    client.timeout = 3
+    client.idletimeout = None
+    client.connect(host, port)
+    return client
+
+def disconnect():
+    client.close()
+    client.disconnect()
+
+def add_music():
+    client.add(args.music)
+    #if args.verbose > 0:
+    #    print(music)
+    #client.playid(music)
+    
+def play_id():
+    client.playid(args.id)
+    
+def play_pos():
+    client.play(args.pos)
+    
+def play_album():
+    music = client.add(args.album)
+    print(music)
+    #client.playid(1)
+    
+def play_next_music():
+    client.next()
+    
+def play_previous_music():
+    client.previous()
+    
+def save_playlist():
+    client.save(args.name)
+    
+def load_playlist():
+    client.load(args.name)
+    
+def get_playlist():
+    playlist = client.playlistinfo()
+    music = ( _ for _ in playlist )
+    print('pos:file:id')
+    for i in music:
+        if 'title' in i.keys():
+            print(':'.join((i['pos'], i['title'], i['id'])))
+        else: 
+            print(':'.join((i['pos'], i['file'], i['id'])))
+
+def clear_playlist():
+    client.clear()
+    
+def stop_music():
+    client.stop()
+    
+def pause_music():
+    client.pause()
+    
+def set_volume():
+    client.setvol(args.volume)
+    
+def get_stats():
+    stats = client.stats()
+    print(json.dumps(stats, indent=4, sort_keys=True))
+    
+#def execute():
+#    stats = client.args.()
+
+def search_pattern():
+    result = client.search("any", args.pattern)
+    if args.verbose > 0:
+        print(json.dumps(result, indent=4, sort_keys=True))
+    for music in result:
+        print(music['file'])
+    return result
+    
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description=''
+        )
+    
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        help='Verbose mode',
+        action='count'
+        )
+
+    parser.add_argument(
+        "-H",
+        "--hostname",
+        help='hostname',
+        default='127.0.0.1'
+        )
+
+    parser.add_argument(
+        "-p", 
+        "--port", 
+        help='MPD port', 
+        default=6600, 
+        type=int 
+        )
+
+    #Subparsers
+    subparsers = parser.add_subparsers(help='sub-command help')
+
+    # Cmd add
+    parser_add = subparsers.add_parser('add', help='add music')
+    parser_add.add_argument('host', help='MPD Server')
+    parser_add.add_argument('music', help='be smart')
+    parser_add.add_argument("-p", "--port", help='MPD port', default=6600, type=int )
+    parser_add.set_defaults(func=add_music)
+
+    # Cmd playid
+    parser_playid = subparsers.add_parser('playid', help='play music id')
+    parser_playid.add_argument('host', help='MPD Server')
+    parser_playid.add_argument('id', help='be smart')
+    parser_playid.add_argument("-p", "--port", help='MPD port', default=6600, type=int )
+    parser_playid.set_defaults(func=play_id)
+
+    # Cmd playpos
+    parser_playpos = subparsers.add_parser('playpos', help='play music pos')
+    parser_playpos.add_argument('host', help='MPD Server')
+    parser_playpos.add_argument('pos', help='be smart')
+    parser_playpos.add_argument("-p", "--port", help='MPD port', default=6600, type=int )
+    parser_playpos.set_defaults(func=play_pos)
+
+    # Cmd album
+    parser_album = subparsers.add_parser('album', help='album music')
+    parser_album.add_argument('host', help='MPD Server')
+    parser_album.add_argument('album', help='be smart')
+    parser_album.add_argument("-p", "--port", help='MPD port', default=6600, type=int )
+    parser_album.set_defaults(func=play_album)
+
+    # Cmd next
+    parser_next = subparsers.add_parser('next', help='Next music')
+    parser_next.add_argument('host', help='MPD Server')
+    parser_next.add_argument("-p", "--port", help='MPD port', default=6600, type=int )
+    parser_next.set_defaults(func=play_next_music)
+
+
+    # Cmd playlist
+    parser_playlist = subparsers.add_parser('playlist', help='playlist')
+    parser_playlist.add_argument('host', help='MPD Server')
+    parser_playlist.add_argument("-p", "--port", help='MPD port', default=6600, type=int )
+
+    # Subparser playlist
+    playlist_subparsers = parser_playlist.add_subparsers(help='sub-command help')
+
+    # Cmd get-playlist
+    parser_get_playlist = playlist_subparsers.add_parser('get', help='Get playlist')
+    parser_get_playlist.set_defaults(func=get_playlist)
+
+    # Cmd clear_playlist
+    parser_clear_playlist = playlist_subparsers.add_parser('clear', help='clear playlist music')
+    parser_clear_playlist.set_defaults(func=clear_playlist)
+
+    # Cmd save-playlist
+    parser_save = playlist_subparsers.add_parser('save', help='save playlist music')
+    parser_save.add_argument("name", help='Playlist name' )
+    parser_save.set_defaults(func=save_playlist)
+
+    # Cmd load-playlist
+    parser_load = playlist_subparsers.add_parser('load', help='load playlist music')
+    parser_load.add_argument("name", help='Playlist name' )
+    parser_load.set_defaults(func=load_playlist)
+
+    # Cmd previous
+    parser_previous = subparsers.add_parser('previous', help='Play previous music')
+    parser_previous.add_argument('host', help='MPD Server')
+    parser_previous.add_argument("-p", "--port", help='MPD port', default=6600, type=int )
+    parser_previous.set_defaults(func=play_previous_music)
+
+#    parser_exec = subparsers.add_parser('exec', help='exec mpd cmd')
+#    parser_exec.add_argument('host', help='MPD Server')
+#    parser_exec.add_argument("-p", "--port", help='MPD port', default=6600, type=int )
+#    parser_exec.add_argument("cmd", help='Send cmd to mpd', choices=' load, save]' )
+#    parser_exec.set_defaults(func=execute)
+
+
+    # Cmd stop
+    parser_stop = subparsers.add_parser('stop', help='stop music')
+    parser_stop.add_argument('host', help='MPD Server')
+    parser_stop.add_argument("-p", "--port", help='MPD port', default=6600, type=int )
+    parser_stop.set_defaults(func=stop_music)
+
+    # Cmd pause
+    parser_pause = subparsers.add_parser('pause', help='pause music')
+    parser_pause.add_argument('host', help='MPD Server')
+    parser_pause.add_argument("-p", "--port", help='MPD port', default=6600, type=int )
+    parser_pause.set_defaults(func=pause_music)
+
+    # Cmd search
+    parser_search = subparsers.add_parser('search', help='search music')
+    parser_search.add_argument('host', help='MPD Server')
+    parser_search.add_argument('pattern', help='pattern to search')
+    parser_search.add_argument("-p", "--port", help='MPD port', default=6600, type=int )
+    parser_search.set_defaults(func=search_pattern)
+
+    # Cmd setvol
+    parser_setvol = subparsers.add_parser('volume', help='setvol music')
+    parser_setvol.add_argument('host', help='MPD Server')
+    parser_setvol.add_argument('volume', help='Be smart', type=int)
+    parser_setvol.add_argument("-p", "--port", help='MPD port', default=6600, type=int )
+    parser_setvol.set_defaults(func=set_volume)
+
+    # Cmd get-stat
+    parser_get_stats = subparsers.add_parser('stats', help='Get server stats')
+    parser_get_stats.add_argument('host', help='MPD Server')
+    parser_get_stats.add_argument("-p", "--port", help='MPD port', default=6600, type=int )
+    parser_get_stats.set_defaults(func=get_stats)
+
+    # Start it
+    args = parser.parse_args()
+    
+    client = connect(args.host, args.port)
+    args.func()
+
+    disconnect()
+
